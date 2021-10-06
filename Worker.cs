@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
@@ -16,6 +14,7 @@ namespace BotTraining
         private ILogger<Worker> logger;
         private IConfiguration configuration;
         private DiscordClient discordClient;
+        private IIntentGetter intentGetter;
 
         public Worker(ILogger<Worker> logger, IConfiguration configuration)
         {
@@ -28,6 +27,9 @@ namespace BotTraining
             logger.LogInformation("Starting discord bot");
 
             string discordBotToken = configuration["DiscordBotToken"];
+            string luisAppId = configuration["LuisAppId"];
+            string luisPredictionKey = configuration["LuisPredictionKey"];
+            string luisPredictionEndpoint = configuration["LuisPredictionEndpoint"];
             discordClient = new DiscordClient(new DiscordConfiguration()
             {
                 Token = discordBotToken,
@@ -37,6 +39,8 @@ namespace BotTraining
 
             discordClient.MessageCreated += OnMessageCreated;
             await discordClient.ConnectAsync();
+
+            intentGetter = new LuisIntentGetter(luisAppId, luisPredictionKey, luisPredictionEndpoint);
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
@@ -51,18 +55,22 @@ namespace BotTraining
 
         private async Task OnMessageCreated(DiscordClient client, MessageCreateEventArgs e)
         {
-            if (!IsBotTrainingChannel(e)  || IsMessageFromBot(e))
+            if (!IsBotTrainingChannel(e) || IsMessageFromBot(e))
                 return;
-            if (IsMessageHello(e))
+            
+            var intent = await intentGetter.GetIntent(e.Message.Content);
+            
+            if (intent.IsHello)
             {
                 logger.LogInformation("respond to hello");
                 await e.Message.RespondAsync("Hello");
                 return;
             }
-            if (IsMessageHelp(e))
+            
+            if (intent.IsHelp)
             {
                 logger.LogInformation("help asked");
-                await e.Message.RespondAsync("I only respond to 'hello' with 'hello'");
+                await e.Message.RespondAsync("I only respond to 'hello' with 'hello'. See source code here https://github.com/worming004/BotTraining");
                 return;
             }
         }

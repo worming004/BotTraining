@@ -57,17 +57,17 @@ namespace BotTraining
         {
             if (!IsBotTrainingChannel(e) || IsMessageFromBot(e))
                 return;
-            
+
             var intent = await intentGetter.GetIntent(e.Message.Content);
-            
-            if (intent.IsHello)
+
+            if (intent.IsHello && intent.Score >= 0.9)
             {
                 logger.LogInformation("respond to hello");
                 await e.Message.RespondAsync("Hello");
                 return;
             }
-            
-            if (intent.IsHelp)
+
+            if (intent.IsHelp && intent.Score >= 0.8)
             {
                 logger.LogInformation("help asked");
                 await e.Message.RespondAsync("I only respond to 'hello' with 'hello'. See source code here https://github.com/worming004/BotTraining");

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using System.Text.Json;
+using System.Collections.Generic;
 
 namespace BotTraining
 {
@@ -13,14 +14,16 @@ namespace BotTraining
 
     public struct Intent
     {
-        public string Name;
+        public string Name { get; set; }
+        public float Score { get; set; }
         public bool IsHello => this.Name.Equals("Hello", StringComparison.OrdinalIgnoreCase);
         public bool IsHelp => this.Name.Equals("Help", StringComparison.OrdinalIgnoreCase);
     }
 
     internal class LuisIntentGetter : IIntentGetter
     {
-        private JsonSerializerOptions luisSerializationOptions = new JsonSerializerOptions{
+        private JsonSerializerOptions luisSerializationOptions = new JsonSerializerOptions
+        {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
@@ -31,12 +34,19 @@ namespace BotTraining
 
             public Intent ToIntent()
             {
-                return new Intent { Name = this.Prediction.TopIntent };
+                return new Intent { Name = this.Prediction.TopIntent, Score = GetTopIntentScore };
             }
+
+            private float GetTopIntentScore => Prediction.Intents[Prediction.TopIntent].Score;
         }
         public class Prediction
         {
             public string TopIntent { get; set; }
+            public Dictionary<string, IntentScore> Intents { get; set; } = new Dictionary<string, IntentScore>();
+        }
+        public class IntentScore
+        {
+            public float Score { get; set; }
         }
         private string AppId;
         private string PredictionKey;

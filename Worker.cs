@@ -55,10 +55,10 @@ namespace BotTraining
 
         private async Task OnMessageCreated(DiscordClient client, MessageCreateEventArgs e)
         {
-            if (!IsBotTrainingChannel(e) || IsMessageFromBot(e))
+            if (!IsBotTrainingChannel(e) || IsMessageFromBot(e) || !IsCommandForBot(e, out string content))
                 return;
 
-            var intent = await intentGetter.GetIntent(e.Message.Content);
+            var intent = await intentGetter.GetIntent(content);
 
             if (intent.IsHello && intent.Score >= 0.9)
             {
@@ -73,6 +73,17 @@ namespace BotTraining
                 await e.Message.RespondAsync("I only respond to 'hello' with 'hello'. See source code here https://github.com/worming004/BotTraining");
                 return;
             }
+        }
+
+        private bool IsCommandForBot(MessageCreateEventArgs e, out string content)
+        {
+            content = e.Message.Content;
+            if (content.StartsWith("bot ", StringComparison.OrdinalIgnoreCase))
+            {
+                content = content.Substring(4);
+                return true;
+            }
+            return false;
         }
 
         private bool IsMessageFromBot(MessageCreateEventArgs e)
